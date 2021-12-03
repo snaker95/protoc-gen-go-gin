@@ -40,6 +40,11 @@ func (s *service) execute() string {
 }
 
 // InterfaceName service interface name
+func (s *service) ValidatorInterfaceName() string {
+	return s.Name + "Validator"
+}
+
+// InterfaceName service interface name
 func (s *service) InterfaceName() string {
 	return s.Name + "HTTPServer"
 }

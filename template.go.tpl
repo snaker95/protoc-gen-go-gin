@@ -1,3 +1,7 @@
+type {{ $.ValidatorInterfaceName }} interface {
+    Validate() error
+}
+
 type {{ $.InterfaceName }} interface {
 {{range .MethodSet}}
 	{{.Name}}(context.Context, *{{.Request}}) (*{{.Reply}}, error)
@@ -18,6 +22,7 @@ type {{$.Name}} struct{
 	resp  interface {
 		Error(ctx *gin.Context, err error)
 		ParamsError (ctx *gin.Context, err error)
+		ValidateError (ctx *gin.Context, err error)
 		Success(ctx *gin.Context, data interface{})
 	}
 }
@@ -27,7 +32,7 @@ type default{{$.Name}}Resp struct {}
 
 func (resp default{{$.Name}}Resp) response(ctx *gin.Context, status, code int, msg string, data interface{}) {
 	ctx.JSON(status, map[string]interface{}{
-		"code": code, 
+		"code": code,
 		"msg": msg,
 		"data": data,
 	})
@@ -38,7 +43,7 @@ func (resp default{{$.Name}}Resp) Error(ctx *gin.Context, err error) {
 	code := -1
 	status := 500
 	msg := "未知错误"
-	
+
 	if err == nil {
 		msg += ", err is nil"
 		resp.response(ctx, status, code, msg, nil)
@@ -67,6 +72,12 @@ func (resp default{{$.Name}}Resp) Error(ctx *gin.Context, err error) {
 func (resp default{{$.Name}}Resp) ParamsError (ctx *gin.Context, err error) {
 	_ = ctx.Error(err)
 	resp.response(ctx, 400, 400, "参数错误", nil)
+}
+
+// ValidateError 参数错误
+func (resp default{{$.Name}}Resp) ValidateError (ctx *gin.Context, err error) {
+	_ = ctx.Error(err)
+	resp.response(ctx, 200, 400, err.Error(), nil)
 }
 
 // Success 返回成功信息
@@ -100,6 +111,10 @@ func (s *{{$.Name}}) {{ .HandlerName }} (ctx *gin.Context) {
 		return
 	}
 {{end}}
+    if err := s.validate(&in); err != nil {
+        s.resp.ValidateError(ctx, err)
+        return
+    }
 	md := metadata.New(nil)
 	for k, v := range ctx.Request.Header {
 		md.Set(k, v...)
@@ -114,6 +129,15 @@ func (s *{{$.Name}}) {{ .HandlerName }} (ctx *gin.Context) {
 	s.resp.Success(ctx, out)
 }
 {{end}}
+
+func (s *{{$.Name}}) validate(req interface{}) error {
+    if v, ok := req.({{ $.ValidatorInterfaceName }}); ok {
+		if err := v.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func (s *{{$.Name}}) RegisterService() {
 {{range .Methods}}
