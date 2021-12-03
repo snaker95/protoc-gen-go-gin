@@ -68,7 +68,5 @@ service BlogService {
 
 ## 相关介绍
 
-> 待发布
-
-- Go工程化(四) API 设计上: 项目结构 & 设计
-- Go工程化(五) API 设计下: 基于 protobuf 自动生成 gin 代码
+## 支持 validate
+在原来基础上增加了对protoc-gen-validate的支持, 具体格式可见: https://github.com/envoyproxy/protoc-gen-validate
